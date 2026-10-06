@@ -1,0 +1,164 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-base: #121620;
+    --bg-surface: #1A202C;
+    --bg-card: #1E2533;
+    --stadium-green: #10B981;
+    --soft-lime: #A3E635;
+    --slate-blue: #38BDF8;
+    --warm-amber: #F59E0B;
+    --soft-rose: #F43F5E;
+    --text-primary: #F1F5F9;
+    --text-muted: #94A3B8;
+  }
+
+  body {
+    background-color: #121620;
+    background-image: 
+      radial-gradient(ellipse at 50% 0%, rgba(16, 185, 129, 0.07) 0%, transparent 60%),
+      radial-gradient(circle at 85% 25%, rgba(56, 189, 248, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 15% 75%, rgba(16, 185, 129, 0.04) 0%, transparent 55%);
+    background-size: 100% 100%;
+    background-attachment: fixed;
+    color: #F1F5F9;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  }
+}
+
+/* Clean, modern sports typography */
+.font-broadcast {
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.font-stadium {
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.font-scoreboard {
+  font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
+  letter-spacing: 0.01em;
+}
+
+.font-syne {
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Neutralized shape classes: smooth, rounded corners across all components */
+.clip-angled-sm {
+  border-radius: 0.5rem;
+}
+
+.clip-angled {
+  border-radius: 0.75rem;
+}
+
+.clip-angled-lg {
+  border-radius: 1rem;
+}
+
+.clip-fut-shield {
+  border-radius: 1rem;
+}
+
+.clip-fut-inner {
+  border-radius: 0.875rem;
+}
+
+.clip-chamfer-banner {
+  border-radius: 0.75rem;
+}
+
+.clip-slant-right,
+.clip-slant-left,
+.unskew,
+.unskew-left {
+  transform: none !important;
+}
+
+/* Tactile Sports Card Depth */
+.tile-shadow {
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+.soft-depth {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35);
+}
+
+/* Ambient glow removal: subtle border highlights only */
+.glow-lime,
+.glow-lime-intense {
+  box-shadow: 0 4px 16px -2px rgba(16, 185, 129, 0.18);
+}
+
+.glow-crimson,
+.glow-crimson-intense {
+  box-shadow: 0 4px 16px -2px rgba(244, 63, 94, 0.2);
+}
+
+.text-glow-lime,
+.text-glow-crimson {
+  text-shadow: none;
+}
+
+/* Soft metallic card background shimmer (subtle 10% opacity) */
+@keyframes soft-shimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.holo-foil-gold {
+  background: linear-gradient(135deg, #1e2533 0%, #2a2c20 40%, #1a202c 100%);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.holo-foil-lime {
+  background: linear-gradient(135deg, #1e2533 0%, #153328 40%, #1a202c 100%);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.holo-foil-champions {
+  background: linear-gradient(135deg, #1e2533 0%, #1e293b 40%, #1a202c 100%);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+/* Modern tactile sports buttons */
+.btn-broadcast {
+  transition: all 0.15s ease-out;
+  border-radius: 9999px;
+}
+
+.btn-broadcast:hover {
+  transform: translateY(-1px);
+}
+
+.btn-broadcast:active {
+  transform: translateY(0.5px);
+}
+
+/* Score Reveal Gentle Transition */
+@keyframes score-pop-gentle {
+  0% { transform: scale(0.97); opacity: 0.9; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-score-pop {
+  animation: score-pop-gentle 0.25s ease-out;
+}
+
+/* Warning pulse (soft, low-glare) */
+@keyframes pulse-soft-warning {
+  0%, 100% { border-color: rgba(244, 63, 94, 0.5); }
+  50% { border-color: rgba(244, 63, 94, 0.9); }
+}
+
+.pulse-strobe-crimson {
+  animation: pulse-soft-warning 1s infinite ease-in-out;
+}

@@ -1,0 +1,6 @@
+{
+  "name": "MatchPoint: Modern Football Trivia (2020-Present)",
+  "description": "Local pass-and-play modern football trivia with automated host workflow, speed-decay scoring, broadcast presentation view, and 200+ curated 2020-present questions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
