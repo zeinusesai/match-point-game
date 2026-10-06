@@ -18,12 +18,13 @@ import { TrophyShopModal } from './components/TrophyShopModal';
 import { DailyQuestsModal } from './components/DailyQuestsModal';
 import { MatchmakingModal } from './components/MatchmakingModal';
 import { PostMatchRewardModal } from './components/PostMatchRewardModal';
+import { SoloMatchView } from './components/SoloMatchView';
 import { FooterWatermark } from './components/FooterWatermark';
 import { RemotePlayer, NetworkMessage } from './types/multiplayer';
 import { UserProfile, MatchmakingBot, PostMatchRewards } from './types/progression';
 import { authService } from './services/authService';
 import { peerNetwork } from './utils/peerNetwork';
-import { simulateBotAnswer } from './utils/botEngine';
+import { simulateBotAnswer, createBotOpponent } from './utils/botEngine';
 import { TriviaQuestion, QuestionResult } from './types/trivia';
 import { 
   Play, 
@@ -73,6 +74,7 @@ export default function App() {
     resetTimer,
     setActivePlayer,
     submitResult,
+    submitSoloAnswer,
     nextQuestion,
     prevQuestion,
     manualScoreAdjust,
@@ -104,7 +106,8 @@ export default function App() {
 
   // Active Menu / Game Mode
   const [activeMode, setActiveMode] = useState<'hub' | 'local_setup' | 'playing'>('hub');
-  const [currentMatchMode, setCurrentMatchMode] = useState<'local_host' | '1v1_ranked' | 'ffa_4p' | 'party_room'>('local_host');
+  const [gameMode, setGameMode] = useState<'SOLO_VS_AI' | 'LOCAL_HOST' | 'PARTY_ROOM'>('SOLO_VS_AI');
+  const [currentMatchMode, setCurrentMatchMode] = useState<'local_host' | '1v1_ranked' | 'ffa_4p' | 'party_room'>('1v1_ranked');
   const [activeBots, setActiveBots] = useState<MatchmakingBot[]>([]);
   const botAnswerTimeoutsRef = useRef<number[]>([]);
 
@@ -274,9 +277,68 @@ export default function App() {
     }
   }, [gameStatus, players, currentMatchMode, gameQuestions.length]);
 
-  // Handle Ranked Match Found (SBMM & Bot Backfill)
+  // Launch Dedicated Single-Player (Solo vs AI) Match directly bypassing Host Deck
+  const handleStartSoloVsAi = useCallback((mode: '1v1_ranked' | 'ffa_4p' = '1v1_ranked') => {
+    setCurrentMatchMode(mode);
+    setGameMode('SOLO_VS_AI');
+    const count = mode === '1v1_ranked' ? 1 : 3;
+    const opponents: MatchmakingBot[] = [];
+    for (let i = 0; i < count; i++) {
+      opponents.push(createBotOpponent(profile.rankTier, profile.skillRating, i));
+    }
+    setActiveBots(opponents);
+
+    const userAsPlayer: RemotePlayer = {
+      id: profile.id,
+      name: profile.username,
+      score: 0,
+      avatarColor: profile.avatarColor,
+      avatarNumber: profile.avatarNumber,
+      favoriteClub: profile.favoriteClub,
+      streak: 0,
+      maxStreak: 0,
+      correctCount: 0,
+      incorrectCount: 0,
+      totalAnswerTimeRemaining: 0,
+      clutchPoints: 0,
+      veryHardCorrectCount: 0,
+    };
+
+    const opponentPlayers: RemotePlayer[] = opponents.map(b => ({
+      id: b.id,
+      name: b.name,
+      score: 0,
+      avatarColor: b.avatarColor,
+      avatarNumber: b.avatarNumber,
+      favoriteClub: b.favoriteClub,
+      streak: 0,
+      maxStreak: 0,
+      correctCount: 0,
+      incorrectCount: 0,
+      totalAnswerTimeRemaining: 0,
+      clutchPoints: 0,
+      veryHardCorrectCount: 0,
+    }));
+
+    const roster = [userAsPlayer, ...opponentPlayers];
+    startGame(10, undefined, roster);
+    setActiveMode('playing');
+    setTimeout(() => startTimer(), 100);
+
+    // Stock the 5-question background prefetch buffer immediately
+    aiQuestionService.prefetchQuestions({
+      count: 5,
+      selectedDifficulties: settings.selectedDifficulties,
+      selectedCategories: settings.selectedCategories,
+      eraFocus: settings.eraFocus,
+      difficultyCurve: settings.difficultyCurve,
+    }).catch(() => {});
+  }, [profile, settings, startGame, startTimer]);
+
+  // Handle Ranked Match Found (SBMM & Bot Backfill) - Routes directly into Solo vs AI match
   const handleMatchFound = useCallback((mode: '1v1_ranked' | 'ffa_4p', opponents: MatchmakingBot[]) => {
     setCurrentMatchMode(mode);
+    setGameMode('SOLO_VS_AI');
     setActiveBots(opponents);
 
     // Build player roster with user profile first
@@ -315,9 +377,58 @@ export default function App() {
     // Update game players and start match
     const roster = [userAsPlayer, ...opponentPlayers];
     // Start 10-question competitive fixture
-    startGame(10);
+    startGame(10, undefined, roster);
     setActiveMode('playing');
-  }, [profile, startGame]);
+    setTimeout(() => startTimer(), 100);
+
+    // Replenish prefetch buffer
+    aiQuestionService.prefetchQuestions({
+      count: 5,
+      selectedDifficulties: settings.selectedDifficulties,
+      selectedCategories: settings.selectedCategories,
+      eraFocus: settings.eraFocus,
+      difficultyCurve: settings.difficultyCurve,
+    }).catch(() => {});
+  }, [profile, settings, startGame, startTimer]);
+
+  // Handle Solo Answer Submission (Auto-grades and advances without host intervention)
+  const handleSoloAnswerSubmitted = useCallback((chosenOption: string, remainingTime: number) => {
+    // Generate simulated answers for bots
+    const botAnswers = activeBots.map(b => {
+      const sim = currentQuestion ? simulateBotAnswer(b, currentQuestion) : {
+        chosenOption: '',
+        answerTimeSeconds: 6,
+        isCorrect: false,
+      };
+      return {
+        botId: b.id,
+        chosenOption: sim.chosenOption,
+        isCorrect: sim.isCorrect,
+        answerTimeSeconds: sim.answerTimeSeconds,
+      };
+    });
+
+    submitSoloAnswer(chosenOption, remainingTime, botAnswers);
+  }, [activeBots, currentQuestion, submitSoloAnswer]);
+
+  // Handle Solo Auto-Advancement to Next Question
+  const handleSoloNextQuestion = useCallback(() => {
+    if (currentIndex + 1 >= gameQuestions.length) {
+      nextQuestion();
+    } else {
+      nextQuestion();
+      setTimeout(() => startTimer(), 150);
+
+      // Pre-fetch 5-question buffer in background
+      aiQuestionService.prefetchQuestions({
+        count: 5,
+        selectedDifficulties: settings.selectedDifficulties,
+        selectedCategories: settings.selectedCategories,
+        eraFocus: settings.eraFocus,
+        difficultyCurve: settings.difficultyCurve,
+      }).catch(() => {});
+    }
+  }, [currentIndex, gameQuestions.length, nextQuestion, startTimer, settings]);
 
   // Client joining room
   const handleJoinRoom = useCallback(async (
@@ -494,8 +605,28 @@ export default function App() {
       {/* Main App Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col">
         {gameStatus === 'playing' || gameStatus === 'revealed' ? (
-          /* Active Match View: Split, BigScreen, or Host Deck */
-          currentView === 'split' ? (
+          /* Active Match View: Dedicated Solo vs AI, Split, BigScreen, or Host Deck */
+          gameMode === 'SOLO_VS_AI' ? (
+            <SoloMatchView
+              question={currentQuestion}
+              totalQuestions={gameQuestions.length}
+              currentIndex={currentIndex}
+              player={players.find(p => !p.id.startsWith('bot_')) || players[0]}
+              bots={activeBots}
+              players={players}
+              timeRemaining={timeRemaining}
+              timerRunning={timerRunning}
+              gameStatus={gameStatus}
+              settings={settings}
+              onAnswerSubmitted={handleSoloAnswerSubmitted}
+              onNextQuestion={handleSoloNextQuestion}
+              onForfeitMatch={() => {
+                exitToSetup();
+                setActiveMode('hub');
+              }}
+              isAiLive={settings.useAiGeneration !== false && questionSource === 'ai_live'}
+            />
+          ) : currentView === 'split' ? (
             <SplitView
               question={currentQuestion}
               totalQuestions={gameQuestions.length}
@@ -681,6 +812,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => {
+                    setGameMode('LOCAL_HOST');
                     setCurrentMatchMode('local_host');
                     startGame(settings.gameLength);
                     setActiveMode('playing');
@@ -697,8 +829,15 @@ export default function App() {
           /* Universal Landing Page Mode Selector Hub */
           <ModeSelectorHub
             profile={profile}
-            onSelectLocalPlay={() => setActiveMode('local_setup')}
-            onSelectPrivateRoom={handleOpenOnlineHost}
+            onSelectSoloVsAi={() => handleStartSoloVsAi('1v1_ranked')}
+            onSelectLocalPlay={() => {
+              setGameMode('LOCAL_HOST');
+              setActiveMode('local_setup');
+            }}
+            onSelectPrivateRoom={() => {
+              setGameMode('PARTY_ROOM');
+              handleOpenOnlineHost();
+            }}
             onSelectMatchmaking={() => setMatchmakingModalOpen(true)}
             onOpenProfile={() => setProfileModalOpen(true)}
             onOpenShop={() => setShopModalOpen(true)}
@@ -714,8 +853,12 @@ export default function App() {
         players={players}
         settings={settings}
         categories={allCategories}
-        onHostOnlineRoom={handleOpenOnlineHost}
+        onHostOnlineRoom={() => {
+          setGameMode('PARTY_ROOM');
+          handleOpenOnlineHost();
+        }}
         onStartGame={(len) => {
+          setGameMode('LOCAL_HOST');
           setCurrentMatchMode('local_host');
           startGame(len);
           setActiveMode('playing');
@@ -741,6 +884,7 @@ export default function App() {
         joinUrl={joinUrl}
         players={players}
         onStartMatch={() => {
+          setGameMode('PARTY_ROOM');
           startGame(settings.gameLength);
           setActiveMode('playing');
         }}

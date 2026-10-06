@@ -11,7 +11,8 @@ import {
   Sparkles, 
   ArrowRight,
   Shield,
-  Radio
+  Radio,
+  Bot
 } from 'lucide-react';
 import { soundEngine } from '../utils/audio';
 
@@ -228,13 +229,25 @@ export const MatchmakingModal: React.FC<MatchmakingModalProps> = ({
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={handleStartSearch}
-                className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-scoreboard font-semibold text-base rounded-full shadow-md transition-colors cursor-pointer"
-              >
-                <span>Enter Matchmaking Queue</span>
-              </button>
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={triggerBotBackfill}
+                  className="flex-1 py-3.5 bg-slate-800 hover:bg-slate-700 border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 font-scoreboard font-bold text-sm rounded-full shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Bot className="w-4 h-4 text-emerald-400" />
+                  <span>Deploy AI Opponents (Instant)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleStartSearch}
+                  className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-scoreboard font-bold text-sm rounded-full shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Trophy className="w-4 h-4" />
+                  <span>Enter Ranked Queue</span>
+                </button>
+              </div>
             </div>
           ) : (
             /* Animated Searching Screen */
@@ -293,15 +306,14 @@ export const MatchmakingModal: React.FC<MatchmakingModalProps> = ({
                   Cancel Search
                 </button>
 
-                {elapsedSeconds >= 10 && (
-                  <button
-                    type="button"
-                    onClick={triggerBotBackfill}
-                    className="px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-scoreboard text-xs font-semibold cursor-pointer shadow-sm transition-colors"
-                  >
-                    Deploy AI Opponents Now
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={triggerBotBackfill}
+                  className="px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-scoreboard text-xs font-semibold cursor-pointer shadow-sm transition-colors flex items-center gap-1.5"
+                >
+                  <Bot className="w-3.5 h-3.5" />
+                  <span>Deploy AI Opponents Now</span>
+                </button>
               </div>
             </div>
           )}

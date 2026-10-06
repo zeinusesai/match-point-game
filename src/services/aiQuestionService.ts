@@ -247,26 +247,73 @@ class AiQuestionService {
   }
 
   /**
-   * Pre-fetches next AI question buffer in background
+   * Pre-fetches next AI question buffer in background to maintain a 5-question buffer
    */
   public async prefetchQuestions(options: AiGenerationOptions): Promise<void> {
     if (this.isPrefetching || this.prefetchBuffer.length >= 5) return;
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+
     this.isPrefetching = true;
     try {
-      const res = await this.fetchQuestionBatch({ ...options, count: 5 });
-      this.prefetchBuffer.push(...res.questions);
+      const needed = Math.max(2, 5 - this.prefetchBuffer.length);
+      const res = await this.fetchQuestionBatch({ ...options, count: needed });
+      if (res.questions && res.questions.length > 0) {
+        // Filter out any questions already in the buffer to avoid duplicates
+        const existingIds = new Set(this.prefetchBuffer.map(q => q.id));
+        const fresh = res.questions.filter(q => !existingIds.has(q.id));
+        this.prefetchBuffer.push(...fresh);
+      }
     } catch {
-      // Ignore background prefetch errors
+      // Background prefetch errors are silent
     } finally {
       this.isPrefetching = false;
     }
   }
 
   /**
+   * Returns current buffer size
+   */
+  public getBufferSize(): number {
+    return this.prefetchBuffer.length;
+  }
+
+  /**
    * Consume a pre-fetched AI question if available
    */
   public popPrefetchedQuestion(): TriviaQuestion | null {
-    return this.prefetchBuffer.shift() || null;
+    const q = this.prefetchBuffer.shift() || null;
+    return q;
+  }
+
+  /**
+   * Gets the next question with zero-lag prefetch buffer, falling back seamlessly
+   */
+  public async getNextQuestion(options: AiGenerationOptions): Promise<TriviaQuestion> {
+    // 1. Pop from buffer if available
+    const buffered = this.popPrefetchedQuestion();
+    if (buffered) {
+      // Trigger background replenishment if buffer drops below 5
+      this.prefetchQuestions(options).catch(() => {});
+      return buffered;
+    }
+
+    // 2. If online and AI enabled, try fetching batch to repopulate buffer immediately
+    if (typeof navigator !== 'undefined' && navigator.onLine && !options.offlineOnly) {
+      try {
+        const batch = await this.fetchQuestionBatch({ ...options, count: 5 });
+        if (batch.questions && batch.questions.length > 0) {
+          const first = batch.questions[0];
+          this.prefetchBuffer.push(...batch.questions.slice(1));
+          return first;
+        }
+      } catch (e) {
+        console.warn('Live AI question fetch failed, seamlessly engaging offline fallback:', e);
+      }
+    }
+
+    // 3. Instant zero-latency fallback to curated 200+ database
+    const fallbackList = this.getCuratedFallback(options, 1);
+    return fallbackList[0] || DEFAULT_QUESTIONS[0];
   }
 }
 

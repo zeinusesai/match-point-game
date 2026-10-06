@@ -440,7 +440,7 @@ export function useTriviaGame() {
   }, [gameQuestions, currentIndex, remoteSubmissions, settings, timeRemaining, activePlayerIndex, broadcastState]);
 
   // Start game with hybrid AI Question Engine & instant deduplicated fallback
-  const startGame = useCallback((customLength?: number, preloadedQuestions?: TriviaQuestion[]) => {
+  const startGame = useCallback((customLength?: number, preloadedQuestions?: TriviaQuestion[], customPlayers?: RemotePlayer[]) => {
     const length = customLength || settings.gameLength || 15;
 
     let selected: TriviaQuestion[] = [];
@@ -487,7 +487,8 @@ export function useTriviaGame() {
 
     setQuestionSource(source);
 
-    const resetPlayers = players.map(p => ({
+    const baseRoster = (customPlayers && customPlayers.length > 0) ? customPlayers : players;
+    const resetPlayers = baseRoster.map(p => ({
       ...p,
       score: 0,
       streak: 0,
@@ -526,6 +527,115 @@ export function useTriviaGame() {
       gameStatus: 'playing',
     });
   }, [settings, players, broadcastState]);
+
+  // Submit Answer in Solo vs AI Mode (Immediate auto-grading for user and AI opponents)
+  const submitSoloAnswer = useCallback((
+    userChosenOption: string,
+    userTimeRemaining: number,
+    botAnswers?: Array<{ botId: string; chosenOption: string; isCorrect: boolean; answerTimeSeconds: number }>
+  ) => {
+    const currentQ = gameQuestions[currentIndex];
+    if (!currentQ) return;
+
+    setTimerRunning(false);
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+
+    const isUserCorrect = userChosenOption === currentQ.answer;
+
+    // Calculate user speed decay points
+    const userSpeedCalc = calculateSpeedPoints(currentQ.difficulty, userTimeRemaining, settings.totalSeconds);
+    const userPlayer = players.find(p => !p.id.startsWith('bot_')) || players[0];
+    const userStreakBonus = isUserCorrect ? calculateStreakBonus(userPlayer?.streak || 0, settings.streakBonusPerCorrect) : 0;
+    const userTotalAwarded = isUserCorrect ? userSpeedCalc.speedPoints + userStreakBonus : 0;
+
+    const botMap = new Map((botAnswers || []).map(b => [b.botId, b]));
+
+    const updated = players.map(p => {
+      if (!p.id.startsWith('bot_')) {
+        // User Player
+        if (isUserCorrect) {
+          const newStreak = p.streak + 1;
+          const isClutch = userTimeRemaining < 5.0;
+          return {
+            ...p,
+            score: p.score + userTotalAwarded,
+            streak: newStreak,
+            maxStreak: Math.max(p.maxStreak, newStreak),
+            correctCount: p.correctCount + 1,
+            totalAnswerTimeRemaining: p.totalAnswerTimeRemaining + userTimeRemaining,
+            clutchPoints: isClutch ? p.clutchPoints + userTotalAwarded : p.clutchPoints,
+            veryHardCorrectCount: currentQ.difficulty === 'Very Hard' ? p.veryHardCorrectCount + 1 : p.veryHardCorrectCount,
+            selectedOption: userChosenOption,
+          };
+        } else {
+          return {
+            ...p,
+            streak: 0,
+            incorrectCount: p.incorrectCount + 1,
+            selectedOption: userChosenOption,
+          };
+        }
+      } else {
+        // AI Bot Player
+        const botSim = botMap.get(p.id);
+        const botCorrect = botSim ? botSim.isCorrect : false;
+        const botRemaining = botSim ? Math.max(0, settings.totalSeconds - botSim.answerTimeSeconds) : 0;
+
+        if (botCorrect) {
+          const botCalc = calculateSpeedPoints(currentQ.difficulty, botRemaining, settings.totalSeconds);
+          const botStreakBonus = calculateStreakBonus(p.streak, settings.streakBonusPerCorrect);
+          const botAward = botCalc.speedPoints + botStreakBonus;
+          const newStreak = p.streak + 1;
+          return {
+            ...p,
+            score: p.score + botAward,
+            streak: newStreak,
+            maxStreak: Math.max(p.maxStreak, newStreak),
+            correctCount: p.correctCount + 1,
+            totalAnswerTimeRemaining: p.totalAnswerTimeRemaining + botRemaining,
+            selectedOption: botSim?.chosenOption || currentQ.answer,
+          };
+        } else {
+          return {
+            ...p,
+            streak: 0,
+            incorrectCount: p.incorrectCount + 1,
+            selectedOption: botSim?.chosenOption || '',
+          };
+        }
+      }
+    });
+
+    const result: QuestionResult = {
+      questionId: currentQ.id,
+      playerId: userPlayer.id,
+      playerName: userPlayer.name,
+      isCorrect: isUserCorrect,
+      timeRemaining: userTimeRemaining,
+      basePoints: userSpeedCalc.basePoints,
+      speedPoints: userSpeedCalc.speedPoints,
+      streakBonus: userStreakBonus,
+      totalPointsAwarded: userTotalAwarded,
+      selectedAnswer: userChosenOption,
+      timestamp: Date.now(),
+    };
+
+    setPlayers(updated);
+    setLastResult(result);
+    setHistory(prev => [result, ...prev]);
+    setGameStatus('revealed');
+    aiQuestionService.markQuestionPlayed(currentQ);
+
+    broadcastState({
+      timerRunning: false,
+      players: updated,
+      lastResult: result,
+      gameStatus: 'revealed',
+    });
+  }, [gameQuestions, currentIndex, players, settings, broadcastState]);
 
   const startTimer = useCallback(() => {
     if (gameStatus !== 'playing') return;
@@ -888,6 +998,7 @@ export function useTriviaGame() {
     resetTimer,
     setActivePlayer,
     submitResult,
+    submitSoloAnswer,
     nextQuestion,
     prevQuestion,
     manualScoreAdjust,

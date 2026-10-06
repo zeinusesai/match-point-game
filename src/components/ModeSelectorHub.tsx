@@ -7,12 +7,16 @@ import {
   Swords, 
   Trophy, 
   Flame, 
-  ArrowRight,
-  Radio
+  ArrowRight, 
+  Radio, 
+  Bot, 
+  Sparkles, 
+  Zap 
 } from 'lucide-react';
 
 interface ModeSelectorHubProps {
   profile: UserProfile;
+  onSelectSoloVsAi: () => void;
   onSelectLocalPlay: () => void;
   onSelectPrivateRoom: () => void;
   onSelectMatchmaking: () => void;
@@ -23,6 +27,7 @@ interface ModeSelectorHubProps {
 
 export const ModeSelectorHub: React.FC<ModeSelectorHubProps> = ({
   profile,
+  onSelectSoloVsAi,
   onSelectLocalPlay,
   onSelectPrivateRoom,
   onSelectMatchmaking,
@@ -138,79 +143,124 @@ export const ModeSelectorHub: React.FC<ModeSelectorHubProps> = ({
         </p>
       </div>
 
-      {/* 3 Tactile Mode Selection Cards (Balanced Padding, Circular Bubbles, Soft Pill Buttons) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Mode 1: Local Pass & Play (100% Offline) */}
+      {/* 4 Tactile Mode Selection Cards (Solo vs AI, Local Pass & Play, Private Room, Ranked Matchmaking) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        {/* Mode 1: Single Player (Solo vs AI) */}
         <div 
-          onClick={onSelectLocalPlay}
-          className="bg-[#1A202C] border border-slate-700/50 hover:border-emerald-500/50 rounded-2xl p-6 sm:p-7 flex flex-col justify-between cursor-pointer group transition-all duration-200 hover:shadow-xl shadow-md relative overflow-hidden"
+          onClick={onSelectSoloVsAi}
+          className="bg-[#1A202C] border border-emerald-500/50 hover:border-emerald-400 rounded-2xl p-5 sm:p-6 flex flex-col justify-between cursor-pointer group transition-all duration-200 hover:shadow-xl shadow-md relative overflow-hidden ring-1 ring-emerald-500/30"
         >
-          <div className="space-y-4">
+          <div className="space-y-3.5">
             <div className="flex items-center justify-between">
               {/* Circular Icon Bubble */}
-              <div className="w-12 h-12 rounded-full bg-slate-800/90 border border-slate-700/60 flex items-center justify-center text-2xl shadow-inner group-hover:scale-105 transition-transform">
+              <div className="w-11 h-11 rounded-full bg-emerald-950/80 border border-emerald-500/60 flex items-center justify-center text-xl shadow-inner group-hover:scale-105 transition-transform text-emerald-400">
+                <Bot className="w-5 h-5" />
+              </div>
+              <span className="text-[10px] font-scoreboard font-bold px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 uppercase tracking-wide">
+                Live AI Match
+              </span>
+            </div>
+
+            <div>
+              <h2 className="text-xl font-broadcast font-bold text-[#F1F5F9] group-hover:text-emerald-300 transition-colors">
+                Solo vs AI
+              </h2>
+              <p className="text-xs text-slate-400 mt-1.5 leading-relaxed font-sans">
+                Directly pick answers on your screen against smart AI bots. Speed-decay points and live Gemini question generator.
+              </p>
+            </div>
+
+            <div className="pt-1 flex flex-wrap gap-1.5 text-[11px] font-scoreboard text-slate-400">
+              <span className="text-emerald-400">✓ On-Screen Answer</span>
+              <span>·</span>
+              <span>AI Opponents</span>
+              <span>·</span>
+              <span>Auto-Advance</span>
+            </div>
+          </div>
+
+          <div className="pt-5">
+            <button
+              type="button"
+              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-scoreboard font-bold text-xs rounded-full border border-emerald-400 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+            >
+              <span>Play Solo vs AI</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          </div>
+        </div>
+
+        {/* Mode 2: Local Pass & Play (100% Offline Host Deck) */}
+        <div 
+          onClick={onSelectLocalPlay}
+          className="bg-[#1A202C] border border-slate-700/50 hover:border-slate-500 rounded-2xl p-5 sm:p-6 flex flex-col justify-between cursor-pointer group transition-all duration-200 hover:shadow-xl shadow-md relative overflow-hidden"
+        >
+          <div className="space-y-3.5">
+            <div className="flex items-center justify-between">
+              {/* Circular Icon Bubble */}
+              <div className="w-11 h-11 rounded-full bg-slate-800/90 border border-slate-700/60 flex items-center justify-center text-xl shadow-inner group-hover:scale-105 transition-transform">
                 ⚽
               </div>
-              <span className="text-[11px] font-scoreboard font-semibold px-3 py-1 rounded-full bg-emerald-950/40 border border-emerald-500/30 text-emerald-300">
+              <span className="text-[10px] font-scoreboard font-semibold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
                 100% Offline
               </span>
             </div>
 
             <div>
-              <h2 className="text-2xl font-broadcast font-bold text-[#F1F5F9] group-hover:text-emerald-300 transition-colors">
-                Local Pass & Play
+              <h2 className="text-xl font-broadcast font-bold text-[#F1F5F9] group-hover:text-slate-200 transition-colors">
+                Pass & Play Host
               </h2>
-              <p className="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed font-sans">
-                Living room sofa mode. Host directs questions, runs the timer, and awards speed-decay points. Zero internet required.
+              <p className="text-xs text-slate-400 mt-1.5 leading-relaxed font-sans">
+                Living room sofa mode. Host directs real-life players in person, manually running timers and validating scores.
               </p>
             </div>
 
-            <div className="pt-2 flex flex-wrap gap-2 text-xs font-scoreboard text-slate-400">
-              <span className="text-emerald-400">✓ Big Screen View</span>
+            <div className="pt-1 flex flex-wrap gap-1.5 text-[11px] font-scoreboard text-slate-400">
+              <span className="text-slate-300">✓ Host Deck</span>
               <span>·</span>
               <span>2–8 Players</span>
               <span>·</span>
-              <span>Local XP</span>
+              <span>Zero Internet</span>
             </div>
           </div>
 
-          <div className="pt-6">
+          <div className="pt-5">
             <button
               type="button"
-              className="w-full py-3 bg-slate-800 hover:bg-emerald-600 text-emerald-400 hover:text-white font-scoreboard font-semibold text-sm rounded-full border border-emerald-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+              className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-scoreboard font-semibold text-xs rounded-full border border-slate-700 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
             >
-              <span>Kick Off Offline</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              <span>Host Deck Roster</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
             </button>
           </div>
         </div>
 
-        {/* Mode 2: Host Private Online Room (Party Code + QR) */}
+        {/* Mode 3: Host Private Online Room (Party Code + QR) */}
         <div 
           onClick={onSelectPrivateRoom}
-          className="bg-[#1A202C] border border-slate-700/50 hover:border-sky-500/50 rounded-2xl p-6 sm:p-7 flex flex-col justify-between cursor-pointer group transition-all duration-200 hover:shadow-xl shadow-md relative overflow-hidden"
+          className="bg-[#1A202C] border border-slate-700/50 hover:border-sky-500/50 rounded-2xl p-5 sm:p-6 flex flex-col justify-between cursor-pointer group transition-all duration-200 hover:shadow-xl shadow-md relative overflow-hidden"
         >
-          <div className="space-y-4">
+          <div className="space-y-3.5">
             <div className="flex items-center justify-between">
               {/* Circular Icon Bubble */}
-              <div className="w-12 h-12 rounded-full bg-slate-800/90 border border-slate-700/60 flex items-center justify-center text-2xl shadow-inner group-hover:scale-105 transition-transform">
+              <div className="w-11 h-11 rounded-full bg-slate-800/90 border border-slate-700/60 flex items-center justify-center text-xl shadow-inner group-hover:scale-105 transition-transform text-sky-400">
                 🏟️
               </div>
-              <span className="text-[11px] font-scoreboard font-semibold px-3 py-1 rounded-full bg-sky-950/40 border border-sky-500/30 text-sky-300">
+              <span className="text-[10px] font-scoreboard font-semibold px-2.5 py-0.5 rounded-full bg-sky-950/40 border border-sky-500/30 text-sky-300">
                 Party Code + QR
               </span>
             </div>
 
             <div>
-              <h2 className="text-2xl font-broadcast font-bold text-[#F1F5F9] group-hover:text-sky-300 transition-colors">
+              <h2 className="text-xl font-broadcast font-bold text-[#F1F5F9] group-hover:text-sky-300 transition-colors">
                 Host Private Room
               </h2>
-              <p className="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed font-sans">
+              <p className="text-xs text-slate-400 mt-1.5 leading-relaxed font-sans">
                 Generate a 6-character room code. Friends scan with mobile phones to lock in their answers in real-time.
               </p>
             </div>
 
-            <div className="pt-2 flex flex-wrap gap-2 text-xs font-scoreboard text-slate-400">
+            <div className="pt-1 flex flex-wrap gap-1.5 text-[11px] font-scoreboard text-slate-400">
               <span className="text-sky-400">✓ QR Code Scan</span>
               <span>·</span>
               <span>Mobile Buzzer</span>
@@ -219,58 +269,58 @@ export const ModeSelectorHub: React.FC<ModeSelectorHubProps> = ({
             </div>
           </div>
 
-          <div className="pt-6">
+          <div className="pt-5">
             <button
               type="button"
-              className="w-full py-3 bg-slate-800 hover:bg-sky-600 text-sky-300 hover:text-white font-scoreboard font-semibold text-sm rounded-full border border-sky-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+              className="w-full py-2.5 bg-slate-800 hover:bg-sky-600 text-sky-300 hover:text-white font-scoreboard font-semibold text-xs rounded-full border border-sky-500/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
             >
               <span>Host Online Room</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
             </button>
           </div>
         </div>
 
-        {/* Mode 3: Online Ranked Matchmaking (SBMM + Bots) */}
+        {/* Mode 4: Online Ranked Matchmaking (SBMM + Bots) */}
         <div 
           onClick={onSelectMatchmaking}
-          className="bg-[#1A202C] border border-slate-700/50 hover:border-amber-500/50 rounded-2xl p-6 sm:p-7 flex flex-col justify-between cursor-pointer group transition-all duration-200 hover:shadow-xl shadow-md relative overflow-hidden"
+          className="bg-[#1A202C] border border-slate-700/50 hover:border-amber-500/50 rounded-2xl p-5 sm:p-6 flex flex-col justify-between cursor-pointer group transition-all duration-200 hover:shadow-xl shadow-md relative overflow-hidden"
         >
-          <div className="space-y-4">
+          <div className="space-y-3.5">
             <div className="flex items-center justify-between">
               {/* Circular Icon Bubble with Football Trophy */}
-              <div className="w-12 h-12 rounded-full bg-slate-800/90 border border-slate-700/60 flex items-center justify-center text-xl shadow-inner group-hover:scale-105 transition-transform text-amber-400">
+              <div className="w-11 h-11 rounded-full bg-slate-800/90 border border-slate-700/60 flex items-center justify-center text-xl shadow-inner group-hover:scale-105 transition-transform text-amber-400">
                 🏆
               </div>
-              <span className="text-[11px] font-scoreboard font-semibold px-3 py-1 rounded-full bg-amber-950/40 border border-amber-500/30 text-amber-300 uppercase tracking-wider">
-                RANKED DIVISION 1
+              <span className="text-[10px] font-scoreboard font-semibold px-2.5 py-0.5 rounded-full bg-amber-950/40 border border-amber-500/30 text-amber-300 uppercase tracking-wider">
+                Ranked Ladder
               </span>
             </div>
 
             <div>
-              <h2 className="text-2xl font-broadcast font-bold text-[#F1F5F9] group-hover:text-amber-300 transition-colors">
-                Ranked Matchmaking
+              <h2 className="text-xl font-broadcast font-bold text-[#F1F5F9] group-hover:text-amber-300 transition-colors">
+                Ranked Ladder
               </h2>
-              <p className="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed font-sans">
-                Compete 1v1 or in a 4-player Free-For-All against global opponents matching your skill rating, with bot fallback.
+              <p className="text-xs text-slate-400 mt-1.5 leading-relaxed font-sans">
+                Competitive 1v1 duels or 4-player FFA matching your Elo rating, with dynamic AI bot backfill.
               </p>
             </div>
 
-            <div className="pt-2 flex flex-wrap gap-2 text-xs font-scoreboard text-slate-400">
+            <div className="pt-1 flex flex-wrap gap-1.5 text-[11px] font-scoreboard text-slate-400">
               <span className="text-amber-400">✓ Elo Rating</span>
               <span>·</span>
-              <span>60s Bot Fallback</span>
+              <span>Bot Backfill</span>
               <span>·</span>
-              <span>Trophy Rewards</span>
+              <span>Coin Rewards</span>
             </div>
           </div>
 
-          <div className="pt-6">
+          <div className="pt-5">
             <button
               type="button"
-              className="w-full py-3 bg-slate-800 hover:bg-amber-600 text-amber-300 hover:text-white font-scoreboard font-semibold text-sm rounded-full border border-amber-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+              className="w-full py-2.5 bg-slate-800 hover:bg-amber-600 text-amber-300 hover:text-white font-scoreboard font-semibold text-xs rounded-full border border-amber-500/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
             >
-              <span>Find Ranked Match</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              <span>Matchmaking Queue</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
             </button>
           </div>
         </div>

@@ -26,6 +26,7 @@ interface NavBarProps {
   profile?: UserProfile;
   isOnlineHost?: boolean;
   roomCode?: string;
+  gameMode?: string;
   onReturnToHub?: () => void;
   onOpenProfile?: () => void;
   onOpenShop?: () => void;
